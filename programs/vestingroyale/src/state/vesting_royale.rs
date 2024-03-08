@@ -102,6 +102,7 @@ impl VestingRoyale {
             8  + // end_epoch
             2  + // Initial Vest
             4  + // recipient vector length
+            32  + // vesting pool
             recipients_length * 32 // pubkeys
     }
 
