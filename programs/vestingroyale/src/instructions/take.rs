@@ -15,7 +15,7 @@ pub struct TakeArgs {
 #[derive(Accounts)]
 pub struct Take<'info> {
     /// This is the config for this vesting royale
-    #[account(mut, has_one = initializer, has_one = vesting_pool, seeds = [b"vestingroyale", initializer.key().as_ref()], bump)]
+    #[account(mut, has_one = vesting_pool, seeds = [b"vestingroyale", initializer.key().as_ref()], bump)]
     pub vesting_royale: Account<'info, VestingRoyale>,
     /// CHECK: no check needed
     pub initializer: UncheckedAccount<'info>,
@@ -25,11 +25,20 @@ pub struct Take<'info> {
     pub taker: Signer<'info>,
 
     /// Tokens Account to extract to
-    #[account(mut, token::mint = mint)]
+    #[account(
+        init_if_needed,
+        payer = taker,
+        associated_token::mint = mint,
+        associated_token::authority = taker,
+    )]
     pub taker_token_account: Account<'info, TokenAccount>,
 
     /// Pool that will hold the tokens to be vested
-    #[account(mut, token::mint = mint)]
+    #[account(
+        mut,
+        token::mint = mint,
+        token::authority = vesting_royale,
+    )]
     pub vesting_pool: Account<'info, TokenAccount>,
 
     /// Mint of the vested token
@@ -37,12 +46,17 @@ pub struct Take<'info> {
 
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 impl Take<'_> {
     pub fn handle(ctx: Context<Self>, args: TakeArgs) -> Result<()> {
         let vr = &mut ctx.accounts.vesting_royale;
+
         let allocation = vr.take(ctx.accounts.taker.key(), ctx.accounts.vesting_pool.amount)?;
+        msg!("ok Allocation is: {}", 
+             allocation,
+         );
 
         token::transfer(
             CpiContext::new_with_signer(
@@ -50,9 +64,11 @@ impl Take<'_> {
                 SplTransfer {
                     from: ctx.accounts.vesting_pool.to_account_info(),
                     to: ctx.accounts.taker_token_account.to_account_info(), 
-                    authority: ctx.accounts.vesting_pool.to_account_info(),
+                    authority: ctx.accounts.vesting_royale.to_account_info(),
                 },
-                &[&[b"vestingroyale", ctx.accounts.initializer.key().as_ref()], &[&[ctx.bumps.vesting_royale]]]
+                &[&[
+                    b"vestingroyale", ctx.accounts.initializer.key().as_ref(), &[ctx.bumps.vesting_royale]
+                ]]
            ),
            allocation,
        )

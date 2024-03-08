@@ -1,3 +1,5 @@
+use std::task::Wake;
+
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
@@ -34,14 +36,17 @@ impl VestingRoyale {
 
         /// End
         if now >= self.end_epoch {
+            msg!("current unlocked bps: 10000");
             return 10000;
         }
 
         if ( now < self.start_epoch ) {
+            msg!("current unlocked bps: 0");
             return 0;
         }
 
         if ( now == self.start_epoch ) {
+            msg!("current unlocked bps: {}", self.initial_vest);
             return self.initial_vest as u64;
         }
 
@@ -61,6 +66,8 @@ impl VestingRoyale {
         /// never exceed u64
         let a: u64 = (self.initial_vest as u64) + passed * alloc_per_step;
 
+        msg!("current unlocked bps: {}", a);
+
         if a > 10000 {
             panic!()
         }
@@ -69,13 +76,26 @@ impl VestingRoyale {
 
     pub fn take(&mut self, recipient: Pubkey, pool_amount: u64) -> Result<u64> {
         let length: u64 = self.recipients.len() as u64;
+
+        if length == 0 && recipient.key().eq(&self.initializer){
+            // No more recipients; Everyone has taken. Last recipient took out early and din't get
+            // full allocation. Leftovers in pool.
+            // Signer is the initializer.
+            // Initializer may then take remaining funds from the pool
+            return Ok(pool_amount);
+        }
+
         let index = self.recipients.iter().position(|x| *x == recipient).unwrap();
+
+
+        msg!("There are {} recipients. Taker at index {}. Pool contains {}", length, index, pool_amount);
 
         self.recipients.swap_remove(index);
 
         let allocation = u64::try_from(
-            (u128::from(pool_amount) / u128::from(length)) * (u128::from(self.current_unlocked_bps()) / u128::from(10000 as u16))
+            (u128::from(pool_amount) / u128::from(length)) * u128::from(self.current_unlocked_bps()) / u128::from(10000 as u16)
         ).unwrap();
+        msg!("Taker allocation {}", allocation);
 
         Ok(allocation)
 
