@@ -15,8 +15,9 @@ pub struct TakeArgs {
 #[derive(Accounts)]
 pub struct Take<'info> {
     /// This is the config for this vesting royale
-    #[account(mut, has_one = initializer, has_one = vesting_pool)]
+    #[account(mut, has_one = initializer, has_one = vesting_pool, seeds = [b"vestingroyale", initializer.key().as_ref()], bump)]
     pub vesting_royale: Account<'info, VestingRoyale>,
+    /// CHECK: no check needed
     pub initializer: UncheckedAccount<'info>,
 
     /// Taker who is a valid recipient
@@ -51,7 +52,7 @@ impl Take<'_> {
                     to: ctx.accounts.taker_token_account.to_account_info(), 
                     authority: ctx.accounts.vesting_pool.to_account_info(),
                 },
-                &[&[b"vestingroyale", ctx.accounts.initializer.key().as_ref()], &[&[ctx.bumps["vesting_royale"]]]]
+                &[&[b"vestingroyale", ctx.accounts.initializer.key().as_ref()], &[&[ctx.bumps.vesting_royale]]]
            ),
            allocation,
        )

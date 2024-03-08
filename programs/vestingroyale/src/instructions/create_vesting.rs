@@ -81,7 +81,7 @@ impl CreateVesting<'_> {
         let vr = &mut ctx.accounts.vesting_royale;
 
         vr.initializer = ctx.accounts.initializer.key();
-        vr.bump = ctx.bumps["vesting_royale"];
+        vr.bump = ctx.bumps.vesting_royale;
         vr.start_epoch = match args.start_epoch {
             Some(epoch) => {
                 require_gt!(epoch, Clock::get().unwrap().epoch, VestingRoyaleError::AnError);
