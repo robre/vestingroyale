@@ -37,13 +37,13 @@ pub struct VestingRoyale {
 }
 
 impl VestingRoyale {
-    fn current_unlocked_bps(&self) -> u64 {
+    fn current_unlocked_mil_bps(&self) -> u64 {
         let now = Clock::get().unwrap().epoch;
 
         /// End
         if now >= self.end_epoch {
             msg!("current unlocked bps: 10000");
-            return 10000;
+            return 10000 * 1000;
         }
 
         if ( now < self.start_epoch ) {
@@ -53,28 +53,28 @@ impl VestingRoyale {
 
         if ( now == self.start_epoch ) {
             msg!("current unlocked bps: {}", self.initial_vest);
-            return self.initial_vest as u64;
+            return self.initial_vest as u64 * 1000;
         }
 
         /// Always safe and non-0, because end_epoch > start_epoch (created with saturating add)
         let steps = self.end_epoch - self.start_epoch;
 
         /// Always safe, because initial_vest is required to be <= 10000
-        let allocatable = 10000 - self.initial_vest;
+        let allocatable = (10000 - self.initial_vest) as u64 * 1000;
 
         /// Div Rounds Down. Steps never 0
-        let alloc_per_step:u64 = allocatable as u64 / steps;
+        let alloc_per_step:u64 = allocatable / steps;
 
         /// safe because we already checked that now > start_epoch 
         let passed = now - self.start_epoch;
 
         /// epoch is about 3 days. 120 per year, so in 100 years, passed * alloc_per_step would
         /// never exceed u64
-        let a: u64 = (self.initial_vest as u64) + passed * alloc_per_step;
+        let a: u64 = (self.initial_vest as u64 * 1000) + passed * alloc_per_step;
 
         msg!("current unlocked bps: {}", a);
 
-        if a > 10000 {
+        if a > 10000 * 1000{
             panic!()
         }
         a
@@ -99,7 +99,7 @@ impl VestingRoyale {
         self.recipients.swap_remove(index);
 
         let allocation = u64::try_from(
-            (u128::from(pool_amount) / u128::from(length)) * u128::from(self.current_unlocked_bps()) / u128::from(10000 as u16)
+            (u128::from(pool_amount) / u128::from(length)) * u128::from(self.current_unlocked_mil_bps()) / u128::from(10000 as u64 * 1000)
         ).unwrap();
         msg!("Taker allocation {}", allocation);
 
