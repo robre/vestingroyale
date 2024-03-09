@@ -1,12 +1,10 @@
 use crate::error::VestingRoyaleError;
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::pubkey;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{Mint, Token, TokenAccount, Transfer as SplTransfer};
 use anchor_spl::token;
+use anchor_spl::token::{Mint, Token, TokenAccount, Transfer as SplTransfer};
 
 use crate::state::*;
-use crate::utils::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct CreateVestingArgs {
@@ -20,7 +18,6 @@ pub struct CreateVestingArgs {
     pub amount: u64,
     /// Number of account to add
     pub recipient_count: u64,
-
 }
 
 #[derive(Accounts)]
@@ -31,7 +28,7 @@ pub struct CreateVesting<'info> {
         init,
         payer = initializer,
         space = VestingRoyale::size(args.recipient_count as usize),
-        seeds = [b"vestingroyale", initializer.key().as_ref()],
+        seeds = [b"vestingroyale", initializer.key().as_ref(), mint.key().as_ref()],
         bump
     )]
     pub vesting_royale: Account<'info, VestingRoyale>,
@@ -63,7 +60,6 @@ pub struct CreateVesting<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-
     // Remainig Accounts here will be who receive vesting
     // use Address Lookup Tables if needed
 }
@@ -84,34 +80,40 @@ impl CreateVesting<'_> {
         vr.bump = ctx.bumps.vesting_royale;
         vr.start_epoch = match args.start_epoch {
             Some(epoch) => {
-                require_gt!(epoch, Clock::get().unwrap().epoch, VestingRoyaleError::AnError);
+                require_gt!(
+                    epoch,
+                    Clock::get().unwrap().epoch,
+                    VestingRoyaleError::AnError
+                );
                 epoch
-            },
+            }
             None => Clock::get().unwrap().epoch,
         };
         vr.end_epoch = vr.start_epoch.saturating_add(args.end_epoch_delta);
         vr.vesting_pool = ctx.accounts.vesting_pool.key();
+        vr.mint = ctx.accounts.mint.key();
         vr.initial_vest = args.initial_vest;
-
 
         for account in ctx.remaining_accounts.iter() {
             vr.recipients.push(account.key())
         }
 
-        require_eq!(vr.recipients.len() as u64, args.recipient_count, VestingRoyaleError::AnError);
+        require_eq!(
+            vr.recipients.len() as u64,
+            args.recipient_count,
+            VestingRoyaleError::AnError
+        );
 
         token::transfer(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
                 SplTransfer {
                     from: ctx.accounts.initializer_token_account.to_account_info(),
-                    to: ctx.accounts.vesting_pool.to_account_info(), 
+                    to: ctx.accounts.vesting_pool.to_account_info(),
                     authority: ctx.accounts.initializer.to_account_info(),
                 },
-           ),
-           args.amount,
-       )
+            ),
+            args.amount,
+        )
     }
-
 }
-

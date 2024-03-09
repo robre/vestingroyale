@@ -7,7 +7,6 @@ pub use state::*;
 pub mod error;
 pub mod instructions;
 pub mod state;
-mod utils;
 
 declare_id!("2FG7tvMgxAYX3ZF1Zg1Cz36TSwyFrNvN5ipXJd9Yb8Ji");
 
