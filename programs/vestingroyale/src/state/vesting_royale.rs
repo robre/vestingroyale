@@ -13,6 +13,9 @@ pub struct VestingRoyale {
 
     /// Bump
     pub bump: u8,
+    
+    /// Nonce
+    pub nonce: u64,
 
     /// Epoch at which vesting starts
     pub start_epoch: u64,
@@ -25,6 +28,9 @@ pub struct VestingRoyale {
 
     /// The vesting Pool ATA.
     pub vesting_pool: Pubkey,
+
+    /// The vesting Pool Mint.
+    pub mint: Pubkey,
 
     /// List of Recipients that are still enrolled
     pub recipients: Vec<Pubkey>,
@@ -122,7 +128,9 @@ impl VestingRoyale {
             8  + // end_epoch
             2  + // Initial Vest
             4  + // recipient vector length
-            32  + // vesting pool
+            32 + // vesting pool
+            32 + // mint
+            8  + // nonce
             recipients_length * 32 // pubkeys
     }
 

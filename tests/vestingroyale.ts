@@ -122,7 +122,9 @@ describe("vestingroyale", () => {
       console.log(`payer: ${payer.publicKey}`);
 
       await fastForward(context, 1n);
-      let vestingroyale = new PublicKey(await findVestingRoyalePda(payer.publicKey));
+      let nonce = new BN(1234123);
+      console.log(`${nonce.toBuffer('le', 8)}`);
+      let vestingroyale = new PublicKey(await findVestingRoyalePda(payer.publicKey, nonce));
 
       console.log(`vr: ${vestingroyale}`);
       console.log(`bol: ${BOL}`);
@@ -138,7 +140,8 @@ describe("vestingroyale", () => {
             endEpochDelta: new BN(10),
             initialVest: 5000,
             amount: new BN(600 * 10**6),
-            recipientCount: new BN(3)
+            recipientCount: new BN(3),
+            nonce: nonce
         }).accounts({
             vestingRoyale: vestingroyale,
             initializer: payer.publicKey,

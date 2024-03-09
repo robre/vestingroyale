@@ -1,5 +1,5 @@
 import { Clock, ProgramTestContext } from "solana-bankrun";
-import { web3 } from "@coral-xyz/anchor";
+import { web3, BN } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 const PROGRAM_ID = new web3.PublicKey("2FG7tvMgxAYX3ZF1Zg1Cz36TSwyFrNvN5ipXJd9Yb8Ji");
 const TOKEN_PROGRAM_ID = new web3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
@@ -18,11 +18,12 @@ export const fastForward = async (context: ProgramTestContext, epochs: bigint) =
     );
 }
 
-export const findVestingRoyalePda = async (initializer: web3.PublicKey) => {
+export const findVestingRoyalePda = async (initializer: web3.PublicKey, nonce: BN) => {
     const [publicKey] = web3.PublicKey.findProgramAddressSync(
         [
             anchor.utils.bytes.utf8.encode("vestingroyale"),
             initializer.toBuffer(),
+            nonce.toBuffer('le', 8),
         ],
         PROGRAM_ID
     );

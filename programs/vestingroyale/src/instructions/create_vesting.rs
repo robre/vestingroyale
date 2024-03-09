@@ -20,7 +20,8 @@ pub struct CreateVestingArgs {
     pub amount: u64,
     /// Number of account to add
     pub recipient_count: u64,
-
+    /// nonce 
+    pub nonce: u64,
 }
 
 #[derive(Accounts)]
@@ -31,7 +32,7 @@ pub struct CreateVesting<'info> {
         init,
         payer = initializer,
         space = VestingRoyale::size(args.recipient_count as usize),
-        seeds = [b"vestingroyale", initializer.key().as_ref()],
+        seeds = [b"vestingroyale", initializer.key().as_ref(), &args.nonce.to_le_bytes()],
         bump
     )]
     pub vesting_royale: Account<'info, VestingRoyale>,
@@ -92,6 +93,8 @@ impl CreateVesting<'_> {
         vr.end_epoch = vr.start_epoch.saturating_add(args.end_epoch_delta);
         vr.vesting_pool = ctx.accounts.vesting_pool.key();
         vr.initial_vest = args.initial_vest;
+        vr.nonce = args.nonce;
+        vr.mint = ctx.accounts.mint.key();
 
 
         for account in ctx.remaining_accounts.iter() {

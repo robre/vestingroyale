@@ -15,7 +15,7 @@ pub struct TakeArgs {
 #[derive(Accounts)]
 pub struct Take<'info> {
     /// This is the config for this vesting royale
-    #[account(mut, has_one = vesting_pool, seeds = [b"vestingroyale", initializer.key().as_ref()], bump)]
+    #[account(mut, has_one = vesting_pool, seeds = [b"vestingroyale", initializer.key().as_ref(), &vesting_royale.nonce.to_le_bytes()], bump)]
     pub vesting_royale: Account<'info, VestingRoyale>,
     /// CHECK: no check needed
     pub initializer: UncheckedAccount<'info>,
@@ -52,6 +52,7 @@ pub struct Take<'info> {
 impl Take<'_> {
     pub fn handle(ctx: Context<Self>, args: TakeArgs) -> Result<()> {
         let vr = &mut ctx.accounts.vesting_royale;
+        let nonce = vr.nonce;
 
         let allocation = vr.take(ctx.accounts.taker.key(), ctx.accounts.vesting_pool.amount)?;
         msg!("ok Allocation is: {}", 
@@ -67,7 +68,7 @@ impl Take<'_> {
                     authority: ctx.accounts.vesting_royale.to_account_info(),
                 },
                 &[&[
-                    b"vestingroyale", ctx.accounts.initializer.key().as_ref(), &[ctx.bumps.vesting_royale]
+                    b"vestingroyale", ctx.accounts.initializer.key().as_ref(), &nonce.to_le_bytes(), &[ctx.bumps.vesting_royale]
                 ]]
            ),
            allocation,
