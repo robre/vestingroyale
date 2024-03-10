@@ -31,6 +31,9 @@ pub struct VestingRoyale {
 
     /// The vesting Pool Mint.
     pub mint: Pubkey,
+    ///
+    /// The vesting Pool Mint.
+    pub initial_recipient_count: u64,
 
     /// List of Recipients that are still enrolled
     pub recipients: Vec<Pubkey>,
@@ -131,6 +134,7 @@ impl VestingRoyale {
             32 + // vesting pool
             32 + // mint
             8  + // nonce
+            8  + // recipient_count
             recipients_length * 32 // pubkeys
     }
 

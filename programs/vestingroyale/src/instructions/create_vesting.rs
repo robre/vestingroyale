@@ -94,6 +94,7 @@ impl CreateVesting<'_> {
         vr.vesting_pool = ctx.accounts.vesting_pool.key();
         vr.initial_vest = args.initial_vest;
         vr.nonce = args.nonce;
+        vr.initial_recipient_count = args.recipient_count;
         vr.mint = ctx.accounts.mint.key();
 
 
